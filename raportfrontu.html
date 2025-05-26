@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Sales Automation Tool Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 400px; max-height: 50vh; }
+        @media (max-width: 768px) { .chart-container { height: 300px; max-height: 60vh; } }
+        .nav-link { transition: all 0.3s ease; }
+        .nav-link.active { color: #0D9488; border-bottom-color: #0D9488; font-weight: 600; }
+        .nav-link:not(.active):hover { color: #0D9488; border-bottom-color: #0D9488; }
+        .tool-detail-card { scroll-behavior: smooth; }
+        .status-icon-yes { color: #10B981; } /* Green-500 */
+        .status-icon-partial { color: #F59E0B; } /* Amber-500 */
+        .status-icon-no { color: #EF4444; } /* Red-500 */
+        .tooltip {
+            position: absolute;
+            background-color: #1f2937; /* gray-800 */
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            white-space: pre-wrap;
+            max-width: 300px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <h1 class="text-xl sm:text-2xl font-bold text-teal-700">Sales Automation Tool Analyzer</h1>
+                <nav class="hidden md:flex space-x-4 lg:space-x-6">
+                    <a href="#explorer-section" class="nav-link py-2 px-1 border-b-2 border-transparent text-gray-600 hover:text-teal-600 hover:border-teal-600">Tool Explorer</a>
+                </nav>
+                <button id="mobile-menu-button" class="md:hidden text-gray-600 hover:text-teal-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="md:hidden hidden bg-white shadow-lg">
+            <a href="#overview-section" class="block py-2 px-4 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600">Overview</a>
+            <a href="#explorer-section" class="block py-2 px-4 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600">Tool Explorer</a>
+            <a href="#takeaways-section" class="block py-2 px-4 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600">Key Takeaways</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        
+
+        <section id="explorer-section" class="mb-12 scroll-mt-20">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-2xl font-semibold text-gray-900 mb-4">Tool Explorer</h2>
+                <p class="text-gray-700 leading-relaxed mb-6">This section allows you to compare various sales automation tools based on the report's findings. Click on a tool in the table to view its detailed analysis. Use the chart to visualize price comparisons against the budget.</p>
+
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-teal-700 mb-3">Tool Comparison Table</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tool Name</th>
+                                    <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" title="Automated LinkedIn connection requests and messaging">LinkedIn</th>
+                                    <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" title="Multiple distinct email sending personas">Personas</th>
+                                    <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" title="A/B testing for email sequences">A/B Test</th>
+                                    <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" title="Native Pipedrive CRM integration">Pipedrive</th>
+                                    <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" title="Zapier integration">Zapier</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price ($/mo)</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Overall Fit</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tools-table-body" class="bg-white divide-y divide-gray-200">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="tooltip" class="tooltip"></div>
+
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 mb-8 lg:mb-0">
+                        <h3 class="text-xl font-semibold text-teal-700 mb-3">Tool Detail Panel</h3>
+                        <div id="tool-detail-panel" class="bg-gray-50 p-6 rounded-lg shadow-inner min-h-[300px] tool-detail-card">
+                            <p class="text-gray-500 italic">Select a tool from the table above to see its detailed analysis here.</p>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-1">
+                        <h3 class="text-xl font-semibold text-teal-700 mb-3">Price Comparison Chart</h3>
+                        <p class="text-sm text-gray-600 mb-2">Annual pricing used for consistency where available. Budget: $150/user/month.</p>
+                        <div class="chart-container bg-white p-4 rounded-lg shadow-inner">
+                            <canvas id="priceComparisonChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        
+    </main>
+
+    <footer class="bg-gray-800 text-white py-8 text-center">
+        <p class="text-sm">&copy; 2024 Interactive Sales Automation Tool Report. All data sourced from the provided report.</p>
+        <p class="text-xs mt-1">This is a dynamically generated interactive view.</p>
+    </footer>
+
+    <script>
+        const toolsData = [
+            {
+                id: 'reply-io',
+                name: 'Reply.io',
+                rank: 1,
+                requirements: {
+                    linkedin: { status: 'Yes', text: 'Automated LinkedIn steps in sequences (connection requests, messages).', icon: '✅' },
+                    personas: { status: 'Yes', text: '"Multichannel" plan includes 10 mailboxes; "Email Volume" plans offer unlimited mailboxes.', icon: '✅' },
+                    abTesting: { status: 'Yes', text: 'Email A/B testing supported.', icon: '✅' }
+                },
+                integrations: {
+                    pipedrive: { status: 'Yes', text: 'Native integration.', icon: '✅' },
+                    zapier: { status: 'Yes', text: 'Zapier integration supported.', icon: '✅' }
+                },
+                price: { compliance: 'Yes', actual: 89, planName: 'Multichannel Plan ($89/mo annually)', details: 'Multichannel plan at $89/user/month (billed annually) includes all core requirements.' },
+                overallFit: 'Excellent Fit',
+                overallFitFull: 'Excellent Fit (Rank 1). Reply.io comprehensively meets all essential requirements and integrations within the budget. Its Multichannel plan is specifically designed for this type of outreach.',
+                website: 'https://reply.io/',
+                reportSummary: {
+                    overview: "Reply.io positions itself as an AI-powered sales engagement platform designed to automate multi-channel outreach, including email, LinkedIn, calls, and SMS.",
+                    strengths: [
+                        "LinkedIn Automation: Explicitly supports automated LinkedIn steps within its sequences, including connection requests and messaging.",
+                        "Multiple Email Personas: The \"Multichannel\" plan ($89/user/month annually) includes 10 mailboxes, and their \"Email Volume\" plans offer unlimited mailboxes.",
+                        "A/B Testing: The platform includes email A/B testing capabilities.",
+                        "Pipedrive & Zapier Integration: Offers native integration with Pipedrive CRM and also supports Zapier.",
+                        "Price Compliance: The \"Multichannel\" plan fits comfortably within the $150 budget."
+                    ],
+                    considerations: "While the \"Multichannel\" plan offers 10 mailboxes, users requiring a very large number of distinct personas might need to clarify if this limit is sufficient or if an \"Email Volume\" plan would be more appropriate, potentially altering the cost."
+                }
+            },
+            {
+                id: 'mailshake',
+                name: 'Mailshake',
+                rank: 2,
+                requirements: {
+                    linkedin: { status: 'Yes', text: 'LinkedIn automation available on "Sales Engagement" plan.', icon: '✅' },
+                    personas: { status: 'Yes', text: '"Sales Engagement" plan allows 10 email addresses per account; can send from multiple addresses (up to 50) in a campaign.', icon: '✅' },
+                    abTesting: { status: 'Yes', text: 'Available on all plans.', icon: '✅' }
+                },
+                integrations: {
+                    pipedrive: { status: 'Yes', text: 'Native integration on "Email Outreach" and "Sales Engagement" plans.', icon: '✅' },
+                    zapier: { status: 'Yes', text: 'Zapier integration available on "Email Outreach" and "Sales Engagement" plans.', icon: '✅' }
+                },
+                price: { compliance: 'Yes', actual: 85, planName: 'Sales Engagement Plan ($85/mo annually)', details: 'Sales Engagement plan at $99/month (or $85/month annually) includes all required features.' },
+                overallFit: 'Excellent Fit',
+                overallFitFull: "Excellent Fit (Rank 2). Mailshake's Sales Engagement plan meets all criteria effectively and within budget, offering a strong suite for multi-channel outreach.",
+                website: 'https://mailshake.com/',
+                reportSummary: {
+                    overview: "Mailshake is an AI-powered sales engagement platform focused on automating cold outreach across email, phone, and social channels, including LinkedIn.",
+                    strengths: [
+                        "LinkedIn Automation: \"Sales Engagement\" plan includes LinkedIn automation features.",
+                        "Multiple Email Personas: Permits up to 10 email addresses per account, and can send a single campaign from multiple (up to 50).",
+                        "A/B Testing: Available on all Mailshake plans.",
+                        "Pipedrive & Zapier Integration: Native Pipedrive and Zapier connectivity included.",
+                        "Price Compliance: \"Sales Engagement\" plan ($85/mo annually) meets all core requirements within budget."
+                    ],
+                    considerations: "Users should verify the depth and specific capabilities of its LinkedIn automation to ensure it aligns with their desired workflow complexity."
+                }
+            },
+            {
+                id: 'woodpecker-co',
+                name: 'Woodpecker.co',
+                rank: 3,
+                requirements: {
+                    linkedin: { status: 'Yes (with Dux-Soup)', text: 'Via Dux-Soup integration for automated connection requests/messaging. Dux-Soup is a separate subscription.', icon: '✅' },
+                    personas: { status: 'Yes', text: 'Unlimited email accounts supported on all plans.', icon: '✅' },
+                    abTesting: { status: 'Yes', text: 'A/B testing (up to 5 versions) included in all plans.', icon: '✅' }
+                },
+                integrations: {
+                    pipedrive: { status: 'Yes (with add-on)', text: 'Native integration available via a $20/month integrations add-on.', icon: '✅' },
+                    zapier: { status: 'Yes (with add-on)', text: 'Zapier integration available via the same $20/month integrations add-on.', icon: '✅' }
+                },
+                price: { compliance: 'Yes', actual: 51.25, planName: 'Starter + Integrations + Dux-Soup Pro (approx. $51.25/mo annually)', details: 'Starter plan ($20/mo annually) + Integrations add-on ($20/mo) + Dux-Soup Pro ($11.25/mo annually) = approx. $51.25/user/month.' },
+                overallFit: 'Very Good Fit',
+                overallFitFull: "Very Good Fit (Rank 3). Meets all requirements cost-effectively when combined with Dux-Soup and the integrations add-on. Requires managing a separate Dux-Soup subscription.",
+                website: 'https://woodpecker.co/',
+                reportSummary: {
+                    overview: "Woodpecker.co is primarily a cold email automation tool that emphasizes deliverability and personalization. It extends its capabilities through integrations, including LinkedIn automation via Dux-Soup.",
+                    strengths: [
+                        "LinkedIn Automation: Integrates with Dux-Soup for automated LinkedIn actions (separate Dux-Soup subscription required).",
+                        "Multiple Email Personas: Allows connecting unlimited email accounts on all plans.",
+                        "A/B Testing: Includes A/B testing for email sequences as a standard feature.",
+                        "Pipedrive & Zapier Integration: Available through a dedicated \"Integrations\" add-on ($20/month).",
+                        "Price Compliance: Highly cost-effective solution (approx. $51.25/user/month annually with all components)."
+                    ],
+                    considerations: "This approach is modular, offering flexibility and cost savings, but necessitates managing two separate subscriptions (Woodpecker and Dux-Soup) and relies on their integration. Dependent on Dux-Soup's features and LinkedIn compliance."
+                }
+            },
+            {
+                id: 'apollo-io',
+                name: 'Apollo.io',
+                rank: 4,
+                requirements: {
+                    linkedin: { status: 'Partially', text: 'Semi-automated. Supports LinkedIn tasks in sequences that require user execution via a click in Apollo, not fully autonomous.', icon: '⚠️' },
+                    personas: { status: 'Yes', text: 'Supports sending from multiple linked email accounts/seats under a user.', icon: '✅' },
+                    abTesting: { status: 'Yes', text: 'A/B testing for emails available on Professional plan.', icon: '✅' }
+                },
+                integrations: {
+                    pipedrive: { status: 'Yes', text: 'Native integration.', icon: '✅' },
+                    zapier: { status: 'Yes', text: 'Zapier integration available.', icon: '✅' }
+                },
+                price: { compliance: 'Yes', actual: 79, planName: 'Professional Plan ($79/mo annually)', details: 'Professional plan at $99/month (or $79/month annually).' },
+                overallFit: 'Good Fit',
+                overallFitFull: 'Good Fit (Rank 4). Meets most criteria well, especially email features, integrations, and price. The LinkedIn automation is more "assisted" than fully automated.',
+                website: 'https://www.apollo.io/',
+                reportSummary: {
+                    overview: "Apollo.io is a strong contender, particularly for its data capabilities and email outreach features. Its Professional plan includes multiple email persona support, A/B testing, native Pipedrive integration, and Zapier integration, all within budget.",
+                    strengths: [
+                        "Multiple Email Personas: Supports sending from multiple linked email accounts.",
+                        "A/B Testing: Available on Professional plan.",
+                        "Pipedrive & Zapier Integration: Native Pipedrive and Zapier support.",
+                        "Price Compliance: Professional plan ($79/mo annually) is within budget."
+                    ],
+                    considerations: "The primary area of partial compliance is its LinkedIn automation. While Apollo.io allows LinkedIn steps in sequences, these often function as \"assisted\" tasks requiring user clicks, rather than fully autonomous background automation. If this level of automation is acceptable, Apollo.io is very compelling."
+                }
+            },
+            {
+                id: 'saleshandy',
+                name: 'Saleshandy',
+                rank: 5,
+                requirements: {
+                    linkedin: { status: 'Partially', text: 'Primarily offers a "LinkedIn Email Finder". Does not appear to offer built-in fully automated LinkedIn connection/messaging as sequence steps.', icon: '⚠️' },
+                    personas: { status: 'Yes', text: '"Connect unlimited email accounts at no extra cost" on all Outreach plans.', icon: '✅' },
+                    abTesting: { status: 'Yes', text: '"A/Z testing" available on Outreach Pro plan and higher.', icon: '✅' }
+                },
+                integrations: {
+                    pipedrive: { status: 'Yes', text: 'Native integration on Outreach Pro plan and higher.', icon: '✅' },
+                    zapier: { status: 'Yes', text: 'Zapier integration on Outreach Pro plan and higher.', icon: '✅' }
+                },
+                price: { compliance: 'Yes', actual: 74, planName: 'Outreach Pro Plan ($74/mo annually)', details: 'Outreach Pro plan at $99/month (or $74/month annually).' },
+                overallFit: 'Moderate Fit',
+                overallFitFull: 'Moderate Fit (Rank 5). Strong for email automation, personas, A/B testing, and integrations within budget. The primary miss is the lack of comprehensive, automated LinkedIn connection/messaging features.',
+                website: 'https://www.saleshandy.com/',
+                reportSummary: {
+                    overview: "Saleshandy is strong for email automation, multiple personas, A/B testing, and integrations, all within budget on its Outreach Pro plan.",
+                    strengths: [
+                        "Multiple Email Personas: Connect unlimited email accounts on Outreach plans.",
+                        "A/B Testing: \"A/Z testing\" available on Outreach Pro plan.",
+                        "Pipedrive & Zapier Integration: Native Pipedrive and Zapier on Outreach Pro.",
+                        "Price Compliance: Outreach Pro plan ($74/mo annually) is within budget."
+                    ],
+                    considerations: "The main limitation is the lack of comprehensive, automated LinkedIn connection requests and messaging as sequence steps. Its LinkedIn features focus more on email finding."
+                }
+            },
+            {
+                id: 'instantly-ai',
+                name: 'Instantly.ai',
+                rank: 6,
+                requirements: {
+                    linkedin: { status: 'Partially', text: 'No native automated LinkedIn connection request/messaging sequences. LinkedIn actions primarily via Zapier.', icon: '⚠️' },
+                    personas: { status: 'Yes', text: '"Unlimited Email Accounts" on Growth & Hypergrowth plans.', icon: '✅' },
+                    abTesting: { status: 'Yes', text: '"A/Z testing" on Growth & Hypergrowth plans.', icon: '✅' }
+                },
+                integrations: {
+                    pipedrive: { status: 'Yes', text: 'Native integration available.', icon: '✅' },
+                    zapier: { status: 'Yes', text: 'Zapier integration is available and used for various workflows, including some LinkedIn actions.', icon: '✅' }
+                },
+                price: { compliance: 'Yes', actual: 77.60, planName: 'Hypergrowth Plan ($77.60/mo annually)', details: 'Hypergrowth plan at $97/month (or $77.60/month annually).' },
+                overallFit: 'Moderate Fit',
+                overallFitFull: 'Moderate Fit (Rank 6). Excellent for email automation, personas, A/B testing, and Pipedrive integration within budget. LinkedIn automation relies on Zapier, not native sequencing.',
+                website: 'https://instantly.ai/',
+                reportSummary: {
+                    overview: "Instantly.ai excels in email outreach, offering unlimited email accounts and A/B testing on its Hypergrowth plan, within budget. It also has native Pipedrive and Zapier integrations.",
+                    strengths: [
+                        "Multiple Email Personas: \"Unlimited Email Accounts\" on Growth & Hypergrowth plans.",
+                        "A/B Testing: \"A/Z testing\" on relevant plans.",
+                        "Pipedrive & Zapier Integration: Native Pipedrive and Zapier support.",
+                        "Price Compliance: Hypergrowth plan ($77.60/mo annually) is within budget."
+                    ],
+                    considerations: "LinkedIn automation capabilities appear to rely primarily on Zapier, which might not offer the same depth or ease of use for complex, sequential LinkedIn outreach as a native feature. Better for email-dominant strategies."
+                }
+            },
+            {
+                id: 'smartlead-ai',
+                name: 'Smartlead.ai',
+                rank: 7,
+                requirements: {
+                    linkedin: { status: 'Yes (add-on)', text: 'Multi-channel outreach including social media interactions, but LinkedIn automation is a paid add-on ($59/month).', icon: '⚠️' },
+                    personas: { status: 'Yes', text: '"Unlimited Email Accounts" on all plans.', icon: '✅' },
+                    abTesting: { status: 'Yes', text: 'Supports A/B testing ("multiple variants"). Included in Basic plan.', icon: '✅' }
+                },
+                integrations: {
+                    pipedrive: { status: 'Partially', text: 'Native Pipedrive supported, but Basic plan ($39/mo) may not include full "Webhooks & Integrations" or "API Access" (listed for Pro plan up).', icon: '⚠️' },
+                    zapier: { status: 'Partially', text: 'Zapier supported, but likely requires Pro plan for full access.', icon: '⚠️' }
+                },
+                price: { compliance: 'No (with all features)', actual: 153, planName: 'Pro Plan + LinkedIn Add-on ($153/mo)', details: 'Pro plan ($94/mo) + LinkedIn add-on ($59/mo) = $153/mo. Basic plan ($39/mo) meets budget but likely lacks full integration capabilities and requires the LinkedIn add-on.' },
+                overallFit: 'Partial Fit',
+                overallFitFull: 'Partial Fit (Rank 7). Strong email features and personas. LinkedIn automation via add-on pushes cost over budget with Pro plan needed for full integrations.',
+                website: 'https://www.smartlead.ai/',
+                reportSummary: {
+                    overview: "Smartlead.ai offers robust email automation, unlimited personas, and A/B testing. Native Pipedrive and Zapier are supported.",
+                    strengths: [
+                        "Multiple Email Personas: \"Unlimited Email Accounts\" on all plans.",
+                        "A/B Testing: Supports A/B testing, included in Basic plan."
+                    ],
+                    considerations: "Comprehensive LinkedIn automation is a paid add-on ($59/month). Full integration capabilities (API, webhooks for Pipedrive/Zapier) are typically on the Pro plan ($94/month). The combination ($153/month) slightly exceeds the budget. The Basic plan is cheap but might be insufficient for integration needs."
+                }
+            },
+            {
+                id: 'klenty',
+                name: 'Klenty',
+                rank: 8,
+                requirements: {
+                    linkedin: { status: 'Partially', text: 'Mixed information. Some sources suggest automation, others indicate manual task reminders. Critical ambiguity.', icon: '⚠️' },
+                    personas: { status: 'Partially', text: '"Unlimited inboxes (single domain)" on Starter. Add-on domains for distinct personas cost $30/domain/month.', icon: '⚠️' },
+                    abTesting: { status: 'Yes', text: 'Included in Starter plan and up.', icon: '✅' }
+                },
+                integrations: {
+                    pipedrive: { status: 'Yes', text: 'Native integration on Growth plan and up.', icon: '✅' },
+                    zapier: { status: 'Yes', text: 'Zapier integration on Starter plan and up.', icon: '✅' }
+                },
+                price: { compliance: 'Yes (base plan)', actual: 70, planName: 'Growth Plan ($70/mo annually)', details: 'Growth plan at $70/user/month (annually) includes multichannel capabilities. Cost for additional domains for personas needs to be factored in.' },
+                overallFit: 'Partial Fit',
+                overallFitFull: 'Partial Fit (Rank 8). Good email features, A/B testing, integrations. Price compliant for base plan. Concerns: true nature of LinkedIn automation and extra costs for multiple domain personas.',
+                website: 'https://www.klenty.com/',
+                reportSummary: {
+                    overview: "Klenty offers good email features, A/B testing, and integrations. Its Growth plan is price compliant.",
+                    strengths: [
+                        "A/B Testing: Included in Starter plan and up.",
+                        "Pipedrive & Zapier Integration: Native Pipedrive (Growth plan up) and Zapier (Starter plan up).",
+                        "Price Compliance: Growth plan ($70/mo annually) is within budget for base features."
+                    ],
+                    considerations: "Key concerns include the ambiguity of its LinkedIn automation (fully automated vs. task-based) and potential extra costs for multiple email domain personas ($30/domain/month add-on)."
+                }
+            },
+            {
+                id: 'lemlist',
+                name: 'Lemlist',
+                rank: 9,
+                requirements: {
+                    linkedin: { status: 'Yes', text: 'Automated sequences can include LinkedIn actions (connection requests, messages).', icon: '✅' },
+                    personas: { status: 'Partially', text: 'Implied support for multiple senders/accounts, but pricing is per-seat. Clarity needed if one user subscription can manage truly distinct personas without multiple seat costs.', icon: '⚠️' },
+                    abTesting: { status: 'Yes', text: 'Yes, for email steps.', icon: '✅' }
+                },
+                integrations: {
+                    pipedrive: { status: 'Partially', text: 'Native integrations listed for HubSpot and Salesforce. Pipedrive integration is likely via Zapier/API, not deeply native.', icon: '⚠️' },
+                    zapier: { status: 'Yes', text: 'API access and integrations are supported.', icon: '✅' }
+                },
+                price: { compliance: 'Yes', actual: 99, planName: 'Plans start at $99/month', details: 'Plans start at $99/month. Assuming this plan covers the required features.' },
+                overallFit: 'Partial Fit',
+                overallFitFull: 'Partial Fit (Rank 9). Strong on LinkedIn and email automation with A/B testing. Price is compliant. Main potential misses: lack of deep, native Pipedrive integration and clarity on managing multiple personas under one user fee.',
+                website: 'https://www.lemlist.com/',
+                reportSummary: {
+                    overview: "Lemlist is strong on LinkedIn and email automation with A/B testing, and its starting price is compliant.",
+                    strengths: [
+                        "LinkedIn Automation: Automated sequences can include LinkedIn actions.",
+                        "A/B Testing: Available for email steps.",
+                        "Zapier Integration: API access and integrations supported.",
+                        "Price Compliance: Plans start at $99/month."
+                    ],
+                    considerations: "The main potential miss is the lack of deep, native Pipedrive integration (likely via Zapier/API). Clarity is also needed on whether one user subscription can manage truly distinct personas without incurring multiple seat costs."
+                }
+            }
+        ];
+
+        const populateTable = () => {
+            const tableBody = document.getElementById('tools-table-body');
+            tableBody.innerHTML = ''; // Clear existing rows
+            toolsData.sort((a, b) => a.rank - b.rank).forEach(tool => {
+                const row = tableBody.insertRow();
+                row.className = 'hover:bg-teal-50 cursor-pointer';
+                row.addEventListener('click', () => displayToolDetails(tool.id));
+
+                const cellName = row.insertCell();
+                cellName.className = 'px-4 py-3 whitespace-nowrap text-sm font-medium text-teal-700';
+                cellName.textContent = tool.name;
+
+                const createIconCell = (feature) => {
+                    const cell = row.insertCell();
+                    cell.className = 'px-2 py-3 text-sm text-center';
+                    const iconSpan = document.createElement('span');
+                    iconSpan.className = feature.status === 'Yes' || feature.status === 'Yes (with Dux-Soup)' || feature.status === 'Yes (with add-on)' || feature.status === 'Yes (add-on)' ? 'status-icon-yes' : (feature.status === 'Partially' ? 'status-icon-partial' : 'status-icon-no');
+                    iconSpan.textContent = feature.icon;
+                    iconSpan.title = feature.text; 
+                    cell.appendChild(iconSpan);
+                    
+                    iconSpan.addEventListener('mouseenter', (event) => showTooltip(event, feature.text));
+                    iconSpan.addEventListener('mouseleave', hideTooltip);
+                    return cell;
+                };
+                
+                createIconCell(tool.requirements.linkedin);
+                createIconCell(tool.requirements.personas);
+                createIconCell(tool.requirements.abTesting);
+                createIconCell(tool.integrations.pipedrive);
+                createIconCell(tool.integrations.zapier);
+
+                const cellPrice = row.insertCell();
+                cellPrice.className = 'px-4 py-3 whitespace-nowrap text-sm text-gray-700 text-right';
+                cellPrice.textContent = `$${tool.price.actual.toFixed(2)}`;
+
+                const cellFit = row.insertCell();
+                cellFit.className = 'px-4 py-3 whitespace-nowrap text-sm text-gray-700';
+                cellFit.textContent = tool.overallFit;
+                cellFit.title = tool.overallFitFull;
+                cellFit.addEventListener('mouseenter', (event) => showTooltip(event, tool.overallFitFull));
+                cellFit.addEventListener('mouseleave', hideTooltip);
+
+            });
+        };
+        
+        const tooltipElement = document.getElementById('tooltip');
+
+        function showTooltip(event, text) {
+            tooltipElement.textContent = text;
+            tooltipElement.style.opacity = '1';
+            
+            const targetRect = event.target.getBoundingClientRect();
+            let top = targetRect.bottom + window.scrollY + 5;
+            let left = targetRect.left + window.scrollX + (targetRect.width / 2) - (tooltipElement.offsetWidth / 2);
+
+            if (left < 0) left = 5;
+            if (left + tooltipElement.offsetWidth > window.innerWidth) left = window.innerWidth - tooltipElement.offsetWidth - 5;
+            if (top + tooltipElement.offsetHeight > window.innerHeight + window.scrollY) {
+                 top = targetRect.top + window.scrollY - tooltipElement.offsetHeight - 5;
+            }
+
+
+            tooltipElement.style.top = `${top}px`;
+            tooltipElement.style.left = `${left}px`;
+        }
+
+        function hideTooltip() {
+            tooltipElement.style.opacity = '0';
+        }
+
+
+        const displayToolDetails = (toolId) => {
+            const tool = toolsData.find(t => t.id === toolId);
+            const panel = document.getElementById('tool-detail-panel');
+            if (!tool) {
+                panel.innerHTML = '<p class="text-gray-500 italic">Tool details not found.</p>';
+                return;
+            }
+
+            const renderFeatureDetail = (label, feature) => `
+                <div class="mb-2">
+                    <strong class="text-gray-700">${label}:</strong> 
+                    <span class="${feature.status === 'Yes' || feature.status === 'Yes (with Dux-Soup)' || feature.status === 'Yes (with add-on)' || feature.status === 'Yes (add-on)' ? 'status-icon-yes' : (feature.status === 'Partially' ? 'status-icon-partial' : 'status-icon-no')}">${feature.icon} ${feature.status}</span>
+                    <p class="text-xs text-gray-600 ml-5">${feature.text}</p>
+                </div>
+            `;
+            
+            const strengthsList = tool.reportSummary.strengths.map(s => `<li class="text-sm text-gray-600">${s}</li>`).join('');
+            
+            panel.innerHTML = `
+                <h4 class="text-xl font-bold text-teal-700 mb-2">${tool.name} <a href="${tool.website}" target="_blank" class="text-xs text-blue-500 hover:underline ml-2">Visit Website 🔗</a></h4>
+                <p class="text-sm text-gray-600 mb-3"><strong>Overall Fit:</strong> ${tool.overallFitFull}</p>
+                
+                <div class="mb-4">
+                    <h5 class="font-semibold text-gray-800 mb-1">Report Overview:</h5>
+                    <p class="text-sm text-gray-600">${tool.reportSummary.overview}</p>
+                </div>
+
+                <div class="mb-4">
+                    <h5 class="font-semibold text-gray-800 mb-1">Strengths Against Criteria:</h5>
+                    <ul class="list-disc list-inside space-y-1">${strengthsList}</ul>
+                </div>
+                
+                <div class="mb-4">
+                    <h5 class="font-semibold text-gray-800 mb-1">Potential Considerations/Nuances:</h5>
+                    <p class="text-sm text-gray-600">${tool.reportSummary.considerations}</p>
+                </div>
+
+                <div class="border-t border-gray-200 pt-4 mt-4">
+                    <h5 class="font-semibold text-gray-800 mb-2">Detailed Compliance:</h5>
+                    ${renderFeatureDetail('LinkedIn Automation', tool.requirements.linkedin)}
+                    ${renderFeatureDetail('Multiple Email Personas', tool.requirements.personas)}
+                    ${renderFeatureDetail('A/B Testing', tool.requirements.abTesting)}
+                    ${renderFeatureDetail('Pipedrive Integration', tool.integrations.pipedrive)}
+                    ${renderFeatureDetail('Zapier Integration', tool.integrations.zapier)}
+                    <div class="mb-2">
+                        <strong class="text-gray-700">Price:</strong> 
+                        <span class="${tool.price.compliance === 'Yes' ? 'status-icon-yes' : 'status-icon-no'}">${tool.price.compliance === 'Yes' ? '✅ Compliant' : '❌ Over Budget'}</span>
+                        <p class="text-xs text-gray-600 ml-5">${tool.price.planName} - ${tool.price.details}</p>
+                    </div>
+                </div>
+            `;
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // Highlight selected row
+            const tableRows = document.querySelectorAll('#tools-table-body tr');
+            tableRows.forEach(row => {
+                row.classList.remove('bg-teal-100');
+                if (row.cells[0].textContent === tool.name) {
+                    row.classList.add('bg-teal-100');
+                }
+            });
+        };
+
+        const createPriceChart = () => {
+            const ctx = document.getElementById('priceComparisonChart').getContext('2d');
+            const budget = 150;
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: toolsData.map(tool => tool.name),
+                    datasets: [{
+                        label: 'Tool Price ($/mo)',
+                        data: toolsData.map(tool => tool.price.actual),
+                        backgroundColor: toolsData.map(tool => tool.price.actual <= budget ? 'rgba(13, 148, 136, 0.7)' : 'rgba(239, 68, 68, 0.7)'), // Teal for compliant, Red for over budget
+                        borderColor: toolsData.map(tool => tool.price.actual <= budget ? 'rgba(13, 148, 136, 1)' : 'rgba(239, 68, 68, 1)'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Price ($/user/month)' }
+                        },
+                        x: {
+                             ticks: {
+                                callback: function(value, index, values) {
+                                    const label = this.getLabelForValue(value);
+                                    if (label.length > 15) { // Max length before wrapping
+                                        return label.match(/.{1,15}/g); // Split into chunks of 15
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) { label += ': '; }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                    }
+                                    const tool = toolsData[context.dataIndex];
+                                    return [label, `Plan: ${tool.price.planName.split('(')[0].trim()}`];
+                                }
+                            }
+                        },
+                        annotation: {
+                            annotations: {
+                                budgetLine: {
+                                    type: 'line',
+                                    yMin: budget,
+                                    yMax: budget,
+                                    borderColor: 'rgb(245, 158, 11)', // Amber-500
+                                    borderWidth: 2,
+                                    borderDash: [6, 6],
+                                    label: {
+                                        enabled: true,
+                                        content: `Budget: $${budget}`,
+                                        position: 'end',
+                                        backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                                        font: { weight: 'bold' },
+                                        color: 'white',
+                                        yAdjust: -10
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
+        
+        // Navigation scroll and active link highlighting
+        document.addEventListener('DOMContentLoaded', () => {
+            populateTable();
+            createPriceChart();
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section');
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            document.querySelectorAll('#mobile-menu a').forEach(link => {
+                link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
+            });
+
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.4 
+            };
+
+            const activateLink = (id) => {
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${id}`) {
+                        link.classList.add('active');
+                    }
+                });
+            };
+            
+            const sectionObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        activateLink(entry.target.id);
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => {
+                sectionObserver.observe(section);
+            });
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    const targetSection = document.querySelector(targetId);
+                    if(targetSection) {
+                        // Offset for sticky header if needed, adjust 64 to your header's height
+                        const headerOffset = 80; // Increased offset for better visibility
+                        const elementPosition = targetSection.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                        
+                        window.scrollTo({
+                             top: offsetPosition,
+                             behavior: "smooth"
+                        });
+                        // Manually activate link on click for immediate feedback
+                        activateLink(targetSection.id);
+                         if (mobileMenu.classList.contains('hidden') === false) {
+                            mobileMenu.classList.add('hidden');
+                        }
+                    }
+                });
+            });
+             // Set initial active link
+            const currentHash = window.location.hash;
+            if (currentHash) {
+                const activeSection = document.querySelector(currentHash);
+                if (activeSection) activateLink(activeSection.id);
+            } else if (sections.length > 0) {
+                 // Fallback to the first section or a default if no hash
+                const firstSectionEntry = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting) {
+                        activateLink(entries[0].target.id);
+                        firstSectionEntry.unobserve(entries[0].target);
+                    }
+                }, {threshold: 0.1});
+                firstSectionEntry.observe(sections[0]);
+            }
+        });
+
+    </script>
+</body>
+</html>
